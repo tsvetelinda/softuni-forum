@@ -4,29 +4,37 @@
             <img src="images/logo.png" >
             <p class="logo"> SoftUni Forum</p>
         </div>
-        @if (!isLoggedIn) {
-            <div class="mini-navbar">
-                <ul>
+        <div class="mini-navbar">
+            <ul>
+                @if (isLoggedIn) {
                     <li>
-                        <a href="#">Login</a>
+                        <a (click)="logout()">Logout</a>
                     </li>
                     <li>
-                        <a href="#">Register</a>
+                        <a routerLink="/profile">{{firstName}}'s Profile</a>
                     </li>
-                </ul>
-            </div> 
-        }
+                } 
+                @else {
+                    <li>
+                        <a routerLink="/login">Login</a>
+                    </li>
+                    <li>
+                        <a routerLink="/register">Register</a>
+                    </li>
+                }
+            </ul>
+        </div> 
     </div>
     <nav>
         <ul>
             <li>
-                <a href="#">Home</a>
+                <a routerLink="/home">Home</a>
             </li>
             <li>
-                <a href="#">Themes</a>
+                <a routerLink="/themes">Themes</a>
             </li>
             <li>
-                <a href="#">New Theme</a>
+                <a routerLink="/add-theme">New Theme</a>
             </li>
         </ul>
     </nav>

@@ -202,3 +202,114 @@ export class PostsListComponent implements OnInit {
   }
 }
 ```
+
+### Part 2 of the Workshop
+**1. Generate the new components for the rest of the views of the app.**
+
+**2. Create a new folder `/user`, nested in `/app`, which will hold all user-related components (`login`, `register`, `profile`).**
+
+**3. Create 2 new folders - `/theme` and `/posts-list`, and transfer the corresponding components to them.**
+
+**4. Adjust the **app routing** from the `app.routes.ts` file:**
+  * Check if `provideRouter(routes)` is injected in the `app.config.ts` file. `routes` is imported from `app.routes.ts`.
+  * Replace the `<app-main />` component in `app.component.html` with `<router-outlet />` to dynamically render components based on the routing configuration in `app.routes.ts`.
+  * In the `app.routes.ts` file set the paths, as follows:
+```
+export const routes: Routes = [
+    {path: '', redirectTo: '/home', pathMatch: 'full' },
+    {path: 'home', component: HomeComponent}
+];
+```
+  * Make sure that the `Error page` is included last in the routing configuration:
+```
+{path: '404', component: ErrorComponent},
+{path: '**', redirectTo: '/404', pathMatch: 'full'},
+```
+* **Important Note**: The wildcard route (`'**'`) must always be the last entry to function correctly.
+
+**5. To make the navigation buttons functional, follow these steps:**
+  * Import `RouterLink` to the Header component.
+  * Add the `routerLink` directive in the code, and  and set the appropriate path: `<a routerLink="/home">Home</a>`.
+
+**6. Update the theme paths to enable opening a theme by its ID:**
+```
+{path: 'themes', children: [
+  {path: '', component: MainComponent},
+  {path: ':themeId', component: CurrentThemeComponent}
+]},
+```
+
+**7. Add a new method to the `apiService` for `retrieving a single theme`:**
+* In `api.service.ts`:
+```
+getSingleTheme(id: string) {
+    const { apiUrl } = environment;
+    return this.http.get<Theme>(`${apiUrl}/themes/${id}`);
+  }
+```
+* The `routerLink` directive dynamically generates links. If you have a value that is **determined at runtime** (e.g., `theme._id`), you should use the square brackets `([])` to bind to that value. This ensures Angular evaluates the expression and sets the link dynamically.
+* **Static links**: No brackets are needed because the path is constant.
+```
+<a routerLink="/home" class="normal">Home</a>
+```
+* **Dynamic links**: Use square brackets to bind the routerLink to a dynamic value or expression.
+```
+<a [routerLink]="theme._id" class="normal">
+```
+* In `current-theme.component.ts`:
+```
+export class CurrentThemeComponent implements OnInit {
+  constructor(private route: ActivatedRoute, private apiService: ApiService) {}
+
+  ngOnInit(): void {
+    const id = this.route.snapshot.params['themeId'];
+
+    this.apiService.getSingleTheme(id);
+  }
+}
+```
+* `ActivatedRoute`: Accesses the dynamic parameter (`themeId`) from the URL.
+* `ApiService` method: Fetches the theme data from the server using the provided id.
+* `Dynamic link [routerLink]`: Enables navigation to a URL corresponding to a specific theme.
+
+**8. Update the template to render the data dynamically.**
+
+**9. Add a method in the `apiService` to create a theme:**
+```
+createTheme(themeName: string, postText: string) {
+    const { apiUrl } = environment;
+    const payload = {
+      themeName,
+      postText
+    }
+    return this.http.post<Theme>(`${apiUrl}/themes`, payload);
+  }
+```
+```
+<input type="text" name="themeName" id="themeName" #inputThemeName>
+<input type="text" name="postText" id="postText" #inputPostText>
+<button class="public" (click)="addTheme($event, inputThemeName.value, inputPostText.value)">Post</button>
+```
+* You can add the `$event` parameter to prevent the form's default submission behavior when using a button inside a `<form>` tag. 
+```
+addTheme(event: Event, themeName: string, postText: string) {
+  event.preventDefault();
+}
+```
+
+**10. Create route guards for the app.**
+* Create a folder `/guards` under `/app` to hold the guard files.
+* In the folder, create a file `auth.guard.ts`:
+```
+export const AuthGuard: CanActivateFn = () => {
+    const userService = inject(UserService);
+    return userService.isLogged;
+}
+```
+* Apply the guard to the routing configuration in `app.routes.ts`:
+```
+{path: 'add-theme', component: AddThemeComponent, canActivate: [AuthGuard]}
+```
+* `Route Guards` control access to routes based on custom logic, like whether the user is authenticated.
+
+
