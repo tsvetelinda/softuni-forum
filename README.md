@@ -312,4 +312,240 @@ export const AuthGuard: CanActivateFn = () => {
 ```
 * `Route Guards` control access to routes based on custom logic, like whether the user is authenticated.
 
+### Part 3 of the Workshop
+**1. Apply template-driven form approach to the login form.**
+  * Import `FormsModule` in the `.ts` file.
+  * Update the code, by including `ngForm` and `bgSubmit`:
+```
+<form class="login" #form="ngForm" (ngSubmit)="login(form)">
+```
+  * Prevent the form from submitting if it is invalid: 
+```
+login(form: NgForm) {
+  if (form.invalid) {
+    return;
+  }
+}
+```
+  * Update the input fields, by including `ngModel` and the necessary attributes:
+```
+<p class="field field-icon">
+  <label for="email">Email</label>
+  <input 
+  class="input-error" 
+  type="email" 
+  name="email" 
+  id="email" 
+  placeholder="john.doe@gmail.com" 
+  required
+  ngModel
+  #inputEmail="ngModel">
+</p>
+```
+* Create a new directive for checking the validity of the email: `ng g d email --skip-tests`
+* Since we are expecting the email to end with either `.bg` or `.com`, we can add these values to a new constants file - `constants.ts`:
+```
+export const DOMAINS = ['bg', 'com'];
+```
+* The constants can then be used throughout the app. For example, to be included in the logic in the `.ts` file:
+```
+domains = DOMAINS;
+```
+* Attach the new directive to the email input field: 
+```
+<input type="email" ... [appEmail]="domains">
+```
+* Create a new folder `/utils`, which will hold all the helper functions, for example: `email.validator.ts`.
+```
+export function emailValidator(domains: string[]): ValidatorFn {
+    const domainStr = domains.join('|');
+    const regExp = new RegExp(`[A-z0-9]{6,}@gmail\.(${domainStr})`);
 
+    return (control => {
+        const isInvalid = control.value === '' || regExp.test(control.value);
+
+        return isInvalid ? null : {emailValidator: true};
+    });
+}
+```
+* The `emailValidator` function creates a custom Angular form validator that checks if an email belongs to the Gmail domain and ends with a specified subdomain from a provided list (`.com` or `.bg`). If the email is valid or empty, the validator returns `null`. Otherwise, it adds an error object `{ emailValidator: true }` to indicate a validation failure.
+
+* Here is how the `EmailDirective` is implemented:
+```
+export class EmailDirective implements Validator {
+  @Input() appEmail: string[] = [];
+  
+  constructor() { }
+
+  validate(control: AbstractControl): ValidationErrors | null {
+    const validatorFn = emailValidator(this.appEmail);
+    
+    return validatorFn(control);
+  }
+}
+```
+* The directive assigns the `emailValidator` helper function to a variable (`validatorFn`), passing the control (`email field`) to it for validation. It returns the result of this validation to determine whether the email field is valid or has errors.
+* An error message can be conditionally shown, based on the result of the email validation: 
+```
+@if (inputEmail?.touched) {
+    <div>
+        @if (inputEmail?.errors?.['required']) {
+            <p class="error">Email is required!</p>
+        }
+        @if (inputEmail?.errors?.['emailValidator']) {
+            <p class="error">Email is not valid!</p>
+        }
+    </div>
+}
+```
+* Classes can be conditionally included as well:
+```
+<input [class]="inputEmail?.touched && (inputEmail?.errors?.['required'] || inputEmail?.errors?.['emailValidator']) ? 'input-error' : ''"
+```
+* A button can be made unclickable conditionally too:
+```
+<button [disabled]="form.invalid">Login</button>
+```
+* The steps above are repeated for the password field as well.
+* The input lenght can be validated, thanks to the `minlength` attribute: 
+```
+<input type="password" name="password" id="password" placeholder="******" required ngModel #inputPassword="ngModel" minlength="5">
+```
+
+**2. Apply Reactive approach to the register form.**
+* Import the `ReactiveFormsModule`. 
+* Set up the form controls, and add the necessary validations:
+```
+form = new FormGroup({
+    username: new FormControl('', [Validators.required]),
+    email: new FormControl('', [Validators.required]),
+    telephone: new FormControl(''),
+    password: new FormControl('', [Validators.required]),
+    rePassword: new FormControl('', [Validators.required])
+  });
+```
+* Update the form template, by including `formGroup` and `ngSubmit`:
+```
+<form class="register" [formGroup]="form" (ngSubmit)="register()">
+```
+* Buttons can be disabled conditionally until the form becomes valid:
+```
+<button [disabled]="form.invalid">Create Account</button>
+```
+* Update the form by adding the relevant `formControlName`s:
+```
+<input type="email" name="email" id="email" formControlName="email">
+```
+* Show error messages conditionally:
+```
+@if (form.get('username')?.touched) {
+    <div>
+        @if (form.get('username')?.errors?.['required']) {
+            <p class="error">Username is required!</p>
+        }
+    </div>
+}
+```
+* To optimize our code readability, we can use variables and their `getters`:
+```
+get isUsernameRequired() : boolean {
+  return this.form.get('username')?.touched && this.form.get('username')?.errors?.['required'];
+} 
+```
+```
+@if (isUsernameRequired) {
+    <p class="error">Username is required!</p>
+}
+```
+* Include the `email validator` in the validations array of the email form control:
+```
+email: new FormControl('', [Validators.required, emailValidator(DOMAINS)]),
+```
+* To minimize repetitive functions, the function for required fields can be made universal: 
+```
+isFieldEmpty(controlName: string) {
+  return this.form.get(controlName)?.touched && this.form.get(controlName)?.errors?.['required'];
+}
+```
+```
+@if (isFieldEmpty('username')) {
+  <p class="error">Username is required!</p>
+}
+```
+* It's good practice to wrap the password fields in a `form group`.
+```
+passGroup: new FormGroup({
+    password: new FormControl('', [Validators.required, Validators.minLength(5)]),
+    rePassword: new FormControl('', [Validators.required])
+  }, 
+{
+  validators: [matchPasswordsValidator('password', 'rePassword')]
+})
+```
+* Create a new passwords validator function to check if the two password fields are matching:
+```
+export function matchPasswordsValidator(passwordControlName: string, rePasswordControlName: string) : ValidatorFn {
+    return (control) => {
+        const passwordFormControl = control.get(passwordControlName);
+        const rePasswordFormControl = control.get(rePasswordControlName);
+
+        const passwordsAreMatching = passwordFormControl?.value === rePasswordFormControl?.value;
+
+        return passwordsAreMatching ? null : { matchPasswordsValidator: true };
+    };
+}
+```
+* Password fields (and their labels) can be nested under a `<div>` container: 
+```
+<div formGroupName="passGroup"></div>
+```
+* To optimize the code's readability, a `getter` for the entire passwords form group can be created, and used throughout the code:
+```
+get passGroup() {
+  return this.form.get('passGroup');
+}
+```
+```
+@if (form.get('passGroup')?.get('password')?.errors?.['required']) {
+    <p class="error">Password is required!</p>
+}
+```
+**3. Apply Template-driven approach to the Add theme form.** 
+
+**4. Update the My Profile component.**
+* Include the Edit profile template from the resources, and separate the code to `READONLY MODE`, and `EDIT MODE`. Make use of `<ng-container>`, which provide 'invisible' wrappers. 
+* Introduce a new variable, which will serve as a toggle for showing and hiding the edit mode: `showEditMode`:
+```
+showEditMode: boolean = false;
+
+toggleEditMode() {
+  this.showEditMode = !this.showEditMode;
+}
+```
+* Show the two modes conditionally, namely: if `showEditMode === true`, show `EDIT MODE`, otherwise - show `READONLY MODE`.
+* Add Reactive form approach for the edit form itself. Include the necessary validations. 
+* Add the `handleSaveProfile()` function, which will save the updated data locally (for now), and will toggle the boolean variable:
+```
+handleSaveProfile() {
+  if (this.form.invalid) {
+    return;
+  }
+  this.profileDetails = this.form.value as ProfileDetails;
+  this.toggleEditMode();
+}
+```
+```
+<form [formGroup]="form" (ngSubmit)="handleSaveProfile()">
+...
+  <button class="red-button" (click)="handleCancel($event)">Cancel</button>
+  <button class="green-button" [disabled]="form.invalid">Save</button>
+</form>
+```
+* Include the `handleCancel()` function too, which will toggle the boolean variable:
+```
+handleCancel(event: Event) {
+  event.preventDefault();
+  this.toggleEditMode();
+}
+```
+* By default, Angular submits with all buttons, available in the form, and this is why it is necessary to `prevent this default behavior` for all the buttons, that we do not want to work like that.
