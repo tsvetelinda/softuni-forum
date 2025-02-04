@@ -315,7 +315,7 @@ export const AuthGuard: CanActivateFn = () => {
 ### Part 3 of the Workshop
 **1. Apply template-driven form approach to the login form.**
   * Import `FormsModule` in the `.ts` file.
-  * Update the code, by including `ngForm` and `bgSubmit`:
+  * Update the code, by including `ngForm` and `ngSubmit`:
 ```
 <form class="login" #form="ngForm" (ngSubmit)="login(form)">
 ```
