@@ -52,6 +52,7 @@
     color: white;
     cursor: pointer;
     width: 100%;
+    margin: 0.2rem;
 }
 
 .subscribe {
@@ -60,6 +61,11 @@
 
 .unsubscribe {
     background-color: red;
+}
+
+.edit,
+.delete {
+    background-color: #234465;
 }
 
 .theme-name-wrapper .subscribers p {

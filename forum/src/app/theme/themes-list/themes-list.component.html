@@ -12,7 +12,7 @@
                             </a>
                             <div class="columns">
                                 <div>
-                                    <p>Date: <time>{{theme.created_at}}</time></p>
+                                    <p>Date: <time>{{theme.created_at | date: "YYYY-MM-dd hh:mm"}}</time></p>
                                     <div class="nick-name">
                                         <p>Username: <span>{{theme.userId.username}}</span></p>
                                     </div>

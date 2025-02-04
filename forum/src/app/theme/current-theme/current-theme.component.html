@@ -1,7 +1,5 @@
 <div class="container">
-    <!-- theme content  -->
     <div class="theme-content">
-        <!-- theme-title  -->
         <div class="theme-title">
             <div class="theme-name-wrapper">
                 <div class="theme-name">
@@ -10,8 +8,8 @@
                 </div>
                 <div class="subscribers">
                     <p>Subscribers: <span>{{theme.subscribers.length || 0}}</span></p>
-                    <!-- <button class="subscribe">Subscribe</button>
-                    <button class="unsubscribe">Unsubscribe</button> -->
+                    <!--<button class="subscribe">Subscribe</button>
+                    <button class="unsubscribe">Unsubscribe</button>-->
                 </div>
             </div>
         </div>
@@ -37,7 +35,7 @@
             </div>
          }
         <div class="answer-comment">
-            <p><span>currentUser</span> comment:</p>
+            <p><span>{{ username }}</span> comment:</p>
             <div class="answer">
                 <form>
                     <textarea name="postText" id="comment" cols="30" rows="10"></textarea>
